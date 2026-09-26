@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+
+# Challenge dataset
+/dataset/
+
+# Generated data artifacts
+/data/
+
+# Temporary files
+*.tmp
+*.bak
+
+# OS files
+.DS_Store
