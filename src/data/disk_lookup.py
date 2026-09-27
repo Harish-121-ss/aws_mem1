@@ -131,13 +131,17 @@ class DiskEntityLookup:
         ids = list(entity_ids)
         if not ids:
             return []
-        placeholders = ",".join("?" for _ in ids)
-        rows = self._conn.execute(
-            "SELECT entity_id, source, byte_offset "
-            f"FROM entity_index WHERE entity_id IN ({placeholders})",
-            ids,
-        ).fetchall()
-        by_id = {row["entity_id"]: row for row in rows}
+        # Stay below SQLite's host-parameter limit for larger bounded batches.
+        by_id: dict[str, sqlite3.Row] = {}
+        for start in range(0, len(ids), 900):
+            batch = ids[start:start + 900]
+            placeholders = ",".join("?" for _ in batch)
+            rows = self._conn.execute(
+                "SELECT entity_id, source, byte_offset "
+                f"FROM entity_index WHERE entity_id IN ({placeholders})",
+                batch,
+            ).fetchall()
+            by_id.update({row["entity_id"]: row for row in rows})
         return [by_id.get(entity_id) for entity_id in ids]
 
     def get(self, entity_id: str) -> dict[str, str] | None:
